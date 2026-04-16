@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # O Banco de Dados SaaS (Membros)
+  db:
+    image: postgres:15-alpine
+    container_name: church_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: church_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # O Banco de Dados Exclusivo para o WhatsApp
+  db_whatsapp:
+    image: postgres:15-alpine
+    container_name: church_db_whatsapp
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: evolution_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_whatsapp_data:/var/lib/postgresql/data
+
+  # A API (O Cérebro)
+  app:
+    build: .
+    container_name: church_api
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/church_db
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+
+  # Redis para o servidor do WhatsApp funcionar
+  redis:
+    image: redis:alpine
+    container_name: church_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # Evolution API (WhatsApp)
+  evolution:
+    image: atendai/evolution-api:v2.1.1
+    container_name: church_whatsapp_evolution
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_URL=http://localhost:8080
+      - DOCKER_ENV=true
+      - AUTH_TYPE=apikey
+      - AUTH_API_KEY=sua-apikey-global-12345
+      - REDIS_ENABLED=true
+      - REDIS_URI=redis://redis:6379/1
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://user:password@db_whatsapp:5432/evolution_db?sslmode=disable
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - MANAGER_ENABLED=true
+    depends_on:
+      - redis
+      - db_whatsapp
+    volumes:
+      - evolution_instances:/evolution/instances
+
+volumes:
+  postgres_data:
+  postgres_whatsapp_data:
+  evolution_instances:

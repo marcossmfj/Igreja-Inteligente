@@ -1,0 +1,19 @@
+fastapi[all]
+sqlalchemy
+psycopg2-binary
+pillow
+python-dotenv
+uvicorn
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+pydantic-settings
+requests
+apscheduler
+# Testes e QA
+pytest
+httpx
+pytest-asyncio
+pytest-playwright
+fpdf2
+faker

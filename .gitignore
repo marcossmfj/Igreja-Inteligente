@@ -1,0 +1,19 @@
+# --- PASTA PRIVADA (Credenciais, Robôs e Manuais) ---
+privado/
+.env
+
+# --- DADOS DE CLIENTES E ASSETS GERADOS ---
+assets/tenants/
+assets/cards/
+assets/birthdays/
+assets/aniv_*.png
+
+# --- LOGS E CACHE ---
+*.log
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# --- FRONTEND (Privado) ---
+app/static/index.html
+app/static/master.html
