@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     EVOLUTION_API_URL: str = "http://localhost:8080"
     EVOLUTION_API_KEY: str = "sua-apikey-global-12345"
     
+    ENVIRONMENT: str = "development"
+    
     SALT: str = "igreja-inteligente-salt-123"
     
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

@@ -17,9 +17,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SaaS Master Igreja Inteligente", version="3.0.0", lifespan=lifespan)
 
-# Cria as tabelas
-models.Base.metadata.create_all(bind=database.engine)
-
 # Registro de Rotas
 app.include_router(auth.router)
 app.include_router(master.router)
