@@ -87,6 +87,40 @@ def list_positions(
     """Retorna todos os Cargos e Funções cadastrados para a igreja"""
     return db.query(models.Position).filter(models.Position.church_id == church_id).all()
 
+@router.post("/positions", response_model=PositionSchema)
+def create_position(
+    data: PositionSchema, # Reaproveitamos o schema
+    db: Session = Depends(deps.get_db),
+    church_id: int = Depends(deps.get_current_church_id)
+):
+    """Cria um novo cargo ou função para a igreja"""
+    new_pos = models.Position(
+        name=data.name,
+        type=data.type,
+        church_id=church_id
+    )
+    db.add(new_pos)
+    db.commit()
+    db.refresh(new_pos)
+    return new_pos
+
+@router.delete("/positions/{position_id}")
+def delete_position(
+    position_id: int,
+    db: Session = Depends(deps.get_db),
+    church_id: int = Depends(deps.get_current_church_id)
+):
+    """Remove um cargo ou função"""
+    db_pos = db.query(models.Position).filter(
+        models.Position.id == position_id, 
+        models.Position.church_id == church_id
+    ).first()
+    if not db_pos: raise HTTPException(status_code=404, detail="Cargo não encontrado")
+    
+    db.delete(db_pos)
+    db.commit()
+    return {"message": "Removido com sucesso"}
+
 @router.post("/create-with-positions", response_model=MemberSchema)
 def create_member_complex(
     data: MemberCreateWithPositions,
