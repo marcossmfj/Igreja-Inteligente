@@ -3,7 +3,7 @@ title Central de Comando - SaaS Igreja Inteligente
 color 0B
 
 echo ========================================================
-echo        BEM-VINDO AO SAAS IGREJA INTELIGENTE
+echo        BEM-VINDO AO SAAS IGREJA INTELIGENTE (LOCAL)
 echo ========================================================
 echo.
 
@@ -27,32 +27,30 @@ if %errorlevel% neq 0 (
     echo [OK] Docker ja esta rodando.
 )
 
-:: 2. Gerar o Template Visual (caso nao exista)
-echo.
-echo [2/4] Verificando assets visuais...
-if not exist "assets\template_escala.png" (
-    python privado\scripts\generate_template.py
-    echo [OK] Template gerado!
-) else (
-    echo [OK] Template visual ja existe.
+:: 2. Garantir arquivo .env local se nao existir
+if not exist ".env" (
+    echo [AVISO] Criando arquivo .env local...
+    copy .env.example .env
 )
 
-:: 3. Subir a Infraestrutura (Postgres, WhatsApp, API)
+:: 3. Subir a Infraestrutura (Banco, API, Proxy, Backups)
 echo.
-echo [3/4] Iniciando Servidores (Banco, WhatsApp e API)...
+echo [2/4] Iniciando Containers via Docker Compose...
 docker-compose up -d --build
 
 :: Espera o banco e a API subirem
-timeout /t 10 /nobreak >nul
+echo [AGUARDE] Aguardando inicializacao dos servicos (20s)...
+timeout /t 20 /nobreak >nul
 
-:: Popula o banco com as novas inteligencias (Templates, Membros e Rodizio)
-echo [EXTRA] Injetando Dados de Inteligencia Pastoral...
-docker exec church_api python privado/scripts/seed_test_data.py
+:: 4. Rodar o Setup de Usuarios e Linguajar
+echo.
+echo [3/4] Configurando Usuarios e Linguajar Padrao...
+docker exec -it church_api python setup_users.py
 
-:: 4. Abrir os Portais de Acesso
+:: 5. Abrir os Portais de Acesso
 echo.
 echo [4/4] Abrindo Portais de Gestao no navegador...
-timeout /t 5 /nobreak >nul
+timeout /t 2 /nobreak >nul
 
 :: Abre o Painel Master (SaaS)
 echo Abrindo Painel Master SaaS...
@@ -64,9 +62,11 @@ start "" "http://localhost:8000/dashboard/index.html"
 
 echo.
 echo ========================================================
-echo    TUDO PRONTO! O SISTEMA ESTA RODANDO.
+echo    TUDO PRONTO! O SISTEMA ESTA RODANDO LOCALMENTE.
 echo ========================================================
-echo MASTER: http://localhost:8000/dashboard/master.html (admin/admin)
-echo PASTOR: http://localhost:8000/dashboard/index.html (pastor1@test.com/123456)
+echo MASTER: http://localhost:8000/dashboard/master.html
+echo PASTOR: http://localhost:8000/dashboard/index.html
+echo PROXY : http://localhost:81
+echo ========================================================
 echo.
 pause
