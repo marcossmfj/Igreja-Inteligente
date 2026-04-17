@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 from .models import database, models
 from .routes import membros, auth, webhooks, payments, escalas, master, docs
 from .automation import tasks
@@ -16,6 +17,15 @@ async def lifespan(app: FastAPI):
     # Lógica de shutdown (se necessário) pode ir aqui
 
 app = FastAPI(title="SaaS Master Igreja Inteligente", version="3.0.0", lifespan=lifespan)
+
+# Configuração de CORS (Liberando acesso para a VPS)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Registro de Rotas
 app.include_router(auth.router)

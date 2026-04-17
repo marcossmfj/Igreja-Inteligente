@@ -13,6 +13,7 @@ assets/aniv_*.png
 .pytest_cache/
 __pycache__/
 *.pyc
+*.db
 
 # --- FRONTEND (Privado) ---
 app/static/index.html
