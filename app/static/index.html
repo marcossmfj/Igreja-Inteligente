@@ -174,15 +174,21 @@
             @save="runQuickAdd"
         ></modal-quick-add>
 
-        <modal-subs 
-            :show="showModalSubs" 
+        <modal-subs
+            :show="showModalSubs"
             :substitutes="substitutes"
             @close="showModalSubs=false"
             @apply="applySubstitute"
         ></modal-subs>
 
-    </div>
+        <modal-config-cargos
+            v-if="showModalCargos"
+            :positions="positions"
+            @close="showModalCargos=false"
+            @refresh="loadAll"
+        ></modal-config-cargos>
 
+        </div>
     <script type="module">
         import TabMembros from './components/TabMembros.js';
         import TabVisitantes from './components/TabVisitantes.js';
