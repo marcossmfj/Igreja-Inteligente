@@ -27,7 +27,7 @@ export default {
                         </div>
                         <div class="flex gap-3">
                             <button @click="$emit('export-pdf')" class="bg-slate-100 text-slate-600 px-6 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all shadow-sm">Exportar PDF 📄</button>
-                            <button @click="$emit('show-modal-cargos')" class="bg-amber-100 text-amber-700 px-6 py-4 rounded-2xl font-black hover:bg-amber-200 transition-all shadow-sm flex items-center gap-2">
+                            <button @click="$emit('go-to-linguajar')" class="bg-amber-100 text-amber-700 px-6 py-4 rounded-2xl font-black hover:bg-amber-200 transition-all shadow-sm flex items-center gap-2">
                                 <span class="text-lg text-amber-500">⚙️</span>
                                 Configurar Linguajar
                             </button>
