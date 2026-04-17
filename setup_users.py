@@ -69,6 +69,30 @@ def setup():
         else:
             print(f"⚠️ Usuário Pastor já existia ({pastor_email})")
 
+        # 5. CADASTRAR CARGOS E FUNÇÕES PADRÃO (Para teste)
+        cargos_padrao = [
+            ("Pastor", models.PositionType.CARGO),
+            ("Obreiro", models.PositionType.CARGO),
+            ("Diácono", models.PositionType.CARGO),
+            ("Membro", models.PositionType.FUNCAO),
+            ("Músico", models.PositionType.FUNCAO),
+            ("Mídia", models.PositionType.FUNCAO),
+            ("Som", models.PositionType.FUNCAO),
+            ("Recepção", models.PositionType.FUNCAO)
+        ]
+        
+        for name, p_type in cargos_padrao:
+            existing = db.query(models.Position).filter(
+                models.Position.name == name, 
+                models.Position.church_id == test_church.id
+            ).first()
+            if not existing:
+                new_pos = models.Position(name=name, type=p_type, church_id=test_church.id)
+                db.add(new_pos)
+        
+        db.commit()
+        print("✅ Cargos e Funções Padrão Adicionados à Igreja de Teste!")
+
     except Exception as e:
         print(f"❌ Erro no setup: {e}")
     finally:
