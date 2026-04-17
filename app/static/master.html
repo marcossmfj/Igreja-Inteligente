@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Master Admin - Igreja Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div id="app" class="max-w-4xl mx-auto">
+        <div v-if="!isLogged" class="flex justify-center items-center mt-20">
+            <div class="bg-slate-800 p-8 rounded shadow border border-slate-700 w-96">
+                <h2 class="text-xl font-bold mb-4 text-sky-400 text-center">🔐 Master SaaS</h2>
+                <input v-model="masterPass.user" type="text" placeholder="Admin" class="w-full bg-slate-900 border p-2 mb-3 rounded border-slate-700">
+                <input v-model="masterPass.pass" type="password" placeholder="Senha" class="w-full bg-slate-900 border p-2 mb-3 rounded border-slate-700">
+                <button @click="loginMaster" class="w-full bg-sky-600 hover:bg-sky-500 py-2 rounded font-bold">Entrar</button>
+            </div>
+        </div>
+
+        <div v-else>
+            <div class="flex justify-between items-center mb-8 bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-sky-600 rounded-full flex items-center justify-center font-black text-xl">SA</div>
+                    <div>
+                        <h1 class="text-xl font-bold">🛠️ Painel Master SaaS</h1>
+                        <p class="text-xs text-slate-400">Logado como: <span class="text-sky-400 font-bold">{{ userName }}</span> | <span class="text-white opacity-60 italic">{{ churchName }}</span></p>
+                    </div>
+                </div>
+                <button @click="logoutMaster" class="bg-red-900/50 hover:bg-red-600 text-red-200 px-6 py-2 rounded-xl font-bold transition-all border border-red-800/50">Sair</button>
+            </div>
+
+            <div class="bg-slate-800 p-8 rounded shadow mb-12 border border-slate-700">
+                <h2 class="text-xl font-bold mb-6 text-sky-400">{{ editingId ? '📝 Editar Igreja' : '➕ Cadastrar Nova Igreja' }}</h2>
+                <form @submit.prevent="saveChurch" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <input v-model="form.church_name" type="text" placeholder="Nome da Igreja" class="bg-slate-900 border border-slate-700 p-2 rounded" required>
+                    <input v-model="form.slug" type="text" placeholder="Slug (ex: iprv)" class="bg-slate-900 border border-slate-700 p-2 rounded" :disabled="editingId" required>
+                    <input v-model="form.pastor_email" type="email" placeholder="E-mail Admin" class="bg-slate-900 border border-slate-700 p-2 rounded" required>
+                    <input v-model="form.pastor_password" type="password" placeholder="Senha (Nova ou Manter)" class="bg-slate-900 border border-slate-700 p-2 rounded">
+                    
+                    <input v-model="form.evolution_api_url" type="text" placeholder="Evolution API URL (ex: https://api.exemplo.com)" class="bg-slate-900 border border-slate-700 p-2 rounded">
+                    <input v-model="form.evolution_api_key" type="text" placeholder="Evolution API Key" class="bg-slate-900 border border-slate-700 p-2 rounded">
+                    
+                    <div class="border border-slate-700 p-2 rounded bg-slate-900">
+                        <label class="text-xs text-sky-400">Logo (PNG)</label>
+                        <input type="file" @change="e => logoFile = e.target.files[0]" class="block text-xs mt-1">
+                    </div>
+                    <div class="border border-slate-700 p-2 rounded bg-slate-900">
+                        <label class="text-xs text-sky-400">Template Escala (PNG)</label>
+                        <input type="file" @change="e => templateFile = e.target.files[0]" class="block text-xs mt-1">
+                    </div>
+
+                    <div class="md:col-span-2 flex gap-4">
+                        <button type="submit" class="flex-1 bg-sky-600 hover:bg-sky-500 py-3 rounded font-bold text-lg">
+                            {{ editingId ? '💾 Salvar Alterações' : '🚀 Criar Cliente' }}
+                        </button>
+                        <button v-if="editingId" type="button" @click="resetForm" class="bg-slate-700 px-6 rounded">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <h2 class="text-xl font-bold mb-4">Igrejas Cadastradas</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div v-for="c in churches" :key="c.id" 
+                     class="bg-slate-800 p-5 rounded border border-slate-700 hover:border-sky-500 transition-all group">
+                    <div class="flex justify-between items-start">
+                        <div @click="editChurch(c)" class="cursor-pointer flex-1">
+                            <p class="font-bold text-sky-400 text-lg flex items-center gap-2">
+                                {{c.name}}
+                                <span v-if="c.subscription_status !== 'active'" class="bg-red-500 text-[10px] text-white px-2 py-0.5 rounded uppercase tracking-tighter">Bloqueada</span>
+                            </p>
+                            <p class="text-sm text-slate-400">Slug: <strong>{{c.slug}}</strong></p>
+                            <p class="text-xs text-sky-300 mt-1 font-semibold">👥 {{c.total_people}} pessoas cadastradas</p>
+                            <p class="text-xs text-slate-500 mt-2">📧 {{c.pastor_email}}</p>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button @click="editChurch(c)" class="text-[10px] bg-slate-900 hover:bg-sky-600 p-1 px-2 rounded border border-slate-700 transition-colors uppercase font-bold">✏️ Editar</button>
+                            
+                            <div class="flex items-center justify-between gap-2 bg-slate-900 p-1 px-2 rounded border border-slate-700">
+                                <span class="text-[9px] font-black uppercase tracking-tighter" :class="c.subscription_status === 'active' ? 'text-emerald-400' : 'text-rose-400'">
+                                    {{ c.subscription_status === 'active' ? 'Ativo' : 'Bloqueado' }}
+                                </span>
+                                <input type="checkbox" :checked="c.subscription_status === 'active'" @click.prevent="toggleStatus(c)" class="w-3 h-3 accent-emerald-500 cursor-pointer">
+                            </div>
+
+                            <button @click="deleteChurch(c)" class="text-[10px] bg-red-900 hover:bg-red-600 p-1 px-2 rounded border border-slate-700 transition-colors uppercase font-bold">🗑️ Excluir</button>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="churches.length === 0" class="md:col-span-2 text-center p-10 bg-slate-800 rounded border border-dashed border-slate-700 text-slate-500">
+                    Nenhuma igreja cadastrada.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        createApp({
+            setup() {
+                const token = ref(localStorage.getItem('masterToken') || '');
+                const userName = ref(localStorage.getItem('masterUserName') || 'Admin');
+                const churchName = ref(localStorage.getItem('masterChurchName') || 'SaaS Master');
+                const isLogged = ref(!!token.value);
+                const masterPass = ref({ user: 'admin', pass: 'admin' });
+                const churches = ref([]);
+                const editingId = ref(null);
+                
+                const form = ref({ church_name:'', slug:'', pastor_email:'', pastor_password:'' });
+                const logoFile = ref(null);
+                const templateFile = ref(null);
+
+                const headers = () => ({
+                    'Authorization': `Bearer ${token.value}`
+                });
+
+                const loginMaster = async () => {
+                    // Usar o endpoint de login real para obter um token Master
+                    const fd = new URLSearchParams();
+                    fd.append('username', masterPass.value.user);
+                    fd.append('password', masterPass.value.pass);
+                    
+                    try {
+                        const res = await fetch('/auth/login', { method: 'POST', body: fd });
+                        if (res.ok) {
+                            const data = await res.json();
+                            token.value = data.access_token;
+                            userName.value = data.user_name;
+                            churchName.value = data.church_name;
+                            localStorage.setItem('masterToken', token.value);
+                            localStorage.setItem('masterUserName', userName.value);
+                            localStorage.setItem('masterChurchName', churchName.value);
+                            isLogged.value = true;
+                            loadChurches();
+                        } else {
+                            alert("Acesso Negado! Verifique usuário e senha.");
+                        }
+                    } catch (e) {
+                        alert("Erro ao conectar com o servidor.");
+                    }
+                };
+
+                const logoutMaster = () => {
+                    isLogged.value = false;
+                    token.value = '';
+                    localStorage.removeItem('masterToken');
+                    localStorage.removeItem('masterUserName');
+                    localStorage.removeItem('masterChurchName');
+                };
+
+                const loadChurches = async () => {
+                    try {
+                        const res = await fetch('/master/tenants', { headers: headers() });
+                        if (res.status === 401 || res.status === 403) {
+                            logoutMaster();
+                            return;
+                        }
+                        if (res.ok) {
+                            churches.value = await res.json();
+                        }
+                    } catch (e) {
+                        console.error("Erro ao carregar igrejas:", e);
+                    }
+                };
+
+                const editChurch = (c) => {
+                    editingId.value = c.id;
+                    form.value = { 
+                        church_name: c.name, 
+                        slug: c.slug, 
+                        pastor_email: c.pastor_email, 
+                        pastor_password: '',
+                        evolution_api_url: c.evolution_api_url || '',
+                        evolution_api_key: c.evolution_api_key || ''
+                    };
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+
+                const resetForm = () => {
+                    editingId.value = null;
+                    form.value = { church_name: '', slug: '', pastor_email: '', pastor_password: '' };
+                    logoFile.value = null;
+                    templateFile.value = null;
+                    const fileInputs = document.querySelectorAll('input[type="file"]');
+                    fileInputs.forEach(input => input.value = '');
+                };
+
+                const saveChurch = async () => {
+                    const fd = new FormData();
+                    fd.append('church_name', form.value.church_name);
+                    fd.append('pastor_email', form.value.pastor_email);
+                    if (form.value.pastor_password) fd.append('pastor_password', form.value.pastor_password);
+                    if (form.value.evolution_api_url) fd.append('evolution_api_url', form.value.evolution_api_url);
+                    if (form.value.evolution_api_key) fd.append('evolution_api_key', form.value.evolution_api_key);
+                    if (logoFile.value) fd.append('logo', logoFile.value);
+                    if (templateFile.value) fd.append('schedule_template', templateFile.value);
+                    
+                    let url = '/master/register-church';
+                    let method = 'POST';
+                    
+                    if (editingId.value) {
+                        url = `/master/update-church/${editingId.value}`;
+                        method = 'PATCH';
+                    } else {
+                        fd.append('slug', form.value.slug);
+                    }
+
+                    try {
+                        // Cadastro/Update de igreja também requer admin se for via rota master
+                        const res = await fetch(url, { 
+                            method: method, 
+                            body: fd,
+                            headers: { 'Authorization': `Bearer ${token.value}` }
+                        });
+                        if (res.status === 401 || res.status === 403) {
+                            logoutMaster();
+                            return;
+                        }
+                        if (res.ok) {
+                            alert(editingId.value ? "Igreja Atualizada!" : "Igreja Criada!");
+                            resetForm();
+                            loadChurches();
+                        } else {
+                            const err = await res.json();
+                            alert("Erro: " + (err.detail || "Falha ao salvar."));
+                        }
+                    } catch (e) {
+                        alert("Erro de conexão.");
+                    }
+                };
+
+                const toggleStatus = async (c) => {
+                    const action = c.subscription_status === 'active' ? 'BLOQUEAR' : 'DESBLOQUEAR';
+                    if (!confirm(`Deseja realmente ${action} esta igreja?`)) return;
+                    
+                    try {
+                        const res = await fetch(`/master/toggle-status/${c.id}`, { 
+                            method: 'PATCH',
+                            headers: headers()
+                        });
+                        if (res.status === 401 || res.status === 403) {
+                            logoutMaster();
+                            return;
+                        }
+                        if (res.ok) {
+                            loadChurches();
+                        } else {
+                            alert("Erro ao alterar status.");
+                        }
+                    } catch (e) {
+                        alert("Erro de conexão.");
+                    }
+                };
+
+                const deleteChurch = async (c) => {
+                    if (!confirm(`CUIDADO: Isso excluirá permanentemente a igreja "${c.name}" e TODOS os seus membros, escalas e arquivos. Deseja continuar?`)) return;
+                    
+                    try {
+                        const res = await fetch(`/master/delete-church/${c.id}`, { 
+                            method: 'DELETE',
+                            headers: headers()
+                        });
+                        if (res.status === 401 || res.status === 403) {
+                            logoutMaster();
+                            return;
+                        }
+                        if (res.ok) {
+                            alert("Igreja excluída com sucesso.");
+                            loadChurches();
+                        } else {
+                            const err = await res.json();
+                            alert("Erro ao excluir: " + (err.detail || "Erro interno"));
+                        }
+                    } catch (e) {
+                        alert("Erro de conexão.");
+                    }
+                };
+
+                onMounted(() => {
+                    if (isLogged.value) loadChurches();
+                });
+
+                return { isLogged, masterPass, loginMaster, logoutMaster, form, saveChurch, churches, editChurch, editingId, resetForm, logoFile, templateFile, toggleStatus, deleteChurch, userName, churchName };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

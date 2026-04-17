@@ -15,6 +15,6 @@ __pycache__/
 *.pyc
 *.db
 
-# --- FRONTEND (Privado) ---
-app/static/index.html
-app/static/master.html
+# --- FRONTEND (Arquivos estáticos agora rastreados) ---
+# Removidos do ignore para deploy na VPS
+

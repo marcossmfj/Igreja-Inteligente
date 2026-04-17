@@ -1,33 +1,37 @@
 version: '3.8'
 
 services:
-  # O Banco de Dados SaaS (Membros)
-  db:
-    image: postgres:15-alpine
-    container_name: church_db
+  # Nginx Proxy Manager (Para gerenciar domínios e SSL/HTTPS facilmente)
+  # Acesse o painel na porta 81 para configurar seus domínios
+  proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: church_proxy
     restart: always
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: church_db
     ports:
-      - "5432:5432"
+      - '80:80'
+      - '81:81'
+      - '443:443'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./nginx_data:/data
+      - ./nginx_letsencrypt:/etc/letsencrypt
 
-  # O Banco de Dados Exclusivo para o WhatsApp
-  db_whatsapp:
-    image: postgres:15-alpine
-    container_name: church_db_whatsapp
+  # Backup Automático do Banco de Dados (Roda todos os dias às 03:00)
+  db-backup:
+    image: prodrigestivill/postgres-backup-local
+    container_name: church_db_backup
     restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: evolution_db
-    ports:
-      - "5433:5432"
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=church_db
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
     volumes:
-      - postgres_whatsapp_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
 
   # A API (O Cérebro)
   app:
@@ -35,6 +39,11 @@ services:
     container_name: church_api
     restart: always
     env_file: .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     command: >
       sh -c "alembic upgrade head && 
              if [ \"$ENVIRONMENT\" = \"development\" ]; then
@@ -45,15 +54,40 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - .:/app
+
+  # O Banco de Dados SaaS (Membros)
+  db:
+    image: postgres:15-alpine
+    container_name: church_db
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d church_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: church_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   # Redis para o servidor do WhatsApp funcionar
   redis:
     image: redis:alpine
     container_name: church_redis
     restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - "6379:6379"
 
@@ -65,7 +99,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SERVER_URL=http://localhost:8080
+      - SERVER_URL=http://35.224.87.100:8080
       - DOCKER_ENV=true
       - AUTH_TYPE=apikey
       - AUTH_API_KEY=sua-apikey-global-12345
@@ -77,10 +111,31 @@ services:
       - DATABASE_SAVE_DATA_INSTANCE=true
       - MANAGER_ENABLED=true
     depends_on:
-      - redis
-      - db_whatsapp
+      redis:
+        condition: service_healthy
+      db_whatsapp:
+        condition: service_healthy
     volumes:
       - evolution_instances:/evolution/instances
+
+  # O Banco de Dados Exclusivo para o WhatsApp
+  db_whatsapp:
+    image: postgres:15-alpine
+    container_name: church_db_whatsapp
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d evolution_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: evolution_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_whatsapp_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
