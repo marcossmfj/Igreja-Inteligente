@@ -8,7 +8,7 @@ echo ========================================================
 echo.
 
 :: 1. Verificar se o Docker Desktop esta instalado e rodando
-echo [1/4] Verificando se o motor do Docker esta ativo...
+echo [1/5] Verificando se o motor do Docker esta ativo...
 docker info >nul 2>nul
 if %errorlevel% neq 0 (
     echo [AVISO] Docker Desktop nao esta rodando. Tentando abrir...
@@ -27,15 +27,21 @@ if %errorlevel% neq 0 (
     echo [OK] Docker ja esta rodando.
 )
 
-:: 2. Garantir arquivo .env local se nao existir
+:: 2. Garantir pastas e arquivo .env
+echo [2/5] Preparando pastas e arquivo .env...
+mkdir -p assets/tenants >nul 2>nul
+mkdir -p assets/cards >nul 2>nul
+mkdir -p assets/birthdays >nul 2>nul
+mkdir -p assets/documents >nul 2>nul
+
 if not exist ".env" (
     echo [AVISO] Criando arquivo .env local...
     copy .env.example .env
 )
 
-:: 3. Subir a Infraestrutura (Banco, API, Proxy, Backups)
+:: 3. Subir a Infraestrutura
 echo.
-echo [2/4] Iniciando Containers via Docker Compose...
+echo [3/5] Iniciando Containers via Docker Compose...
 docker-compose up -d --build
 
 :: Espera o banco e a API subirem
@@ -44,25 +50,18 @@ timeout /t 20 /nobreak >nul
 
 :: 4. Rodar o Setup de Usuarios e Linguajar
 echo.
-echo [3/4] Configurando Usuarios e Linguajar Padrao...
-docker exec -it church_api python setup_users.py
+echo [4/5] Configurando Usuarios e Linguajar Padrao...
+docker exec church_api python setup_users.py
 
-:: 5. Abrir os Portais de Acesso
+:: 5. RODAR ROBO DE QA (TESTE COMPLETO)
 echo.
-echo [4/4] Abrindo Portais de Gestao no navegador...
-timeout /t 2 /nobreak >nul
-
-:: Abre o Painel Master (SaaS)
-echo Abrindo Painel Master SaaS...
-start "" "http://localhost:8000/dashboard/master.html"
-
-:: Abre o Painel do Pastor (Dashboard)
-echo Abrindo Portal do Pastor...
-start "" "http://localhost:8000/dashboard/index.html"
+echo [5/5] EXECUTANDO ROBO DE QA (VISITANTES, MEMBROS, CARGOS)...
+echo Aguarde o robo de QA validar o sistema...
+docker exec church_api pytest tests/test_full_workflow.py -s
 
 echo.
 echo ========================================================
-echo    TUDO PRONTO! O SISTEMA ESTA RODANDO LOCALMENTE.
+echo    TUDO PRONTO! SISTEMA VERIFICADO E RODANDO.
 echo ========================================================
 echo MASTER: http://localhost:8000/dashboard/master.html
 echo PASTOR: http://localhost:8000/dashboard/index.html

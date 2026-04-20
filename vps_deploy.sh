@@ -14,6 +14,7 @@ fi
 mkdir -p assets/tenants
 mkdir -p assets/cards
 mkdir -p assets/birthdays
+mkdir -p assets/documents
 
 # 3. Copiar .env.example para .env se não existir
 if [ ! -f .env ]; then

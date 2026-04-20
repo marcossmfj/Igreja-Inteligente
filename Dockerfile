@@ -9,15 +9,11 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
-    xvfb \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Instala navegadores e suas dependências de sistema automaticamente (Playwright)
-RUN playwright install chromium --with-deps
 
 COPY . .
 
