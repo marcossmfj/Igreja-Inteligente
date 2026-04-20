@@ -6,7 +6,7 @@ from fpdf import FPDF
 from fastapi.responses import Response
 from typing import List
 from ..schemas.member import (
-    PositionSchema, MemberSchema, MemberCreateWithPositions, 
+    PositionCreate, PositionSchema, MemberSchema, MemberCreateWithPositions, 
     MemberUpdateSchema, MemberPromoteSchema
 )
 
@@ -89,7 +89,7 @@ def list_positions(
 
 @router.post("/positions", response_model=PositionSchema)
 def create_position(
-    data: PositionSchema, # Reaproveitamos o schema
+    data: PositionCreate, 
     db: Session = Depends(deps.get_db),
     church_id: int = Depends(deps.get_current_church_id)
 ):

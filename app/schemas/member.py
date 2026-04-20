@@ -3,11 +3,12 @@ from typing import List, Optional
 from datetime import datetime
 from ..models import models
 
-class PositionSchema(BaseModel):
-    id: int
+class PositionCreate(BaseModel):
     name: str
     type: str
 
+class PositionSchema(PositionCreate):
+    id: int
     model_config = ConfigDict(from_attributes=True)
 
 class MemberSchema(BaseModel):
