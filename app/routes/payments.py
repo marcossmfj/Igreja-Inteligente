@@ -6,6 +6,7 @@ from ..core.config import settings
 from datetime import datetime, timedelta
 import requests
 import json
+import os
 
 router = APIRouter(prefix="/payments", tags=["SaaS Pagamentos"])
 
