@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from .models import database, models
-from .routes import membros, auth, webhooks, payments, escalas, master, docs
+from .routes import membros, auth, webhooks, payments, escalas, master, docs, visitantes
 from .automation import tasks
 import os
 from contextlib import asynccontextmanager
@@ -32,6 +32,7 @@ app.include_router(auth.router)
 app.include_router(master.router)
 app.include_router(payments.router)
 app.include_router(membros.router)
+app.include_router(visitantes.router)
 app.include_router(escalas.router)
 app.include_router(webhooks.router)
 app.include_router(docs.router)

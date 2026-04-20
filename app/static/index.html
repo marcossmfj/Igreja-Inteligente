@@ -98,11 +98,19 @@
                 <tab-documentos 
                     v-if="tab==='documentos'" 
                     :documents="documents"
+                    @show-modal-upload="showModalUploadDoc=true"
+                    @delete-doc="deleteDoc"
                 ></tab-documentos>
             </main>
         </div>
 
         <!-- MODAIS -->
+        <modal-upload-doc
+            :show="showModalUploadDoc"
+            @close="showModalUploadDoc=false"
+            @upload="uploadDoc"
+        ></modal-upload-doc>
+
         <modal-template 
             :show="showModalTemplate" 
             :templates="templates" 
@@ -203,6 +211,7 @@
         import ModalPromote from './components/ModalPromote.js';
         import ModalQuickAdd from './components/ModalQuickAdd.js';
         import ModalSubs from './components/ModalSubs.js';
+        import ModalUploadDoc from './components/ModalUploadDoc.js';
 
         const { createApp, ref, computed, onMounted } = Vue;
         
@@ -220,7 +229,8 @@
                 'modal-visitor': ModalVisitor,
                 'modal-promote': ModalPromote,
                 'modal-quick-add': ModalQuickAdd,
-                'modal-subs': ModalSubs
+                'modal-subs': ModalSubs,
+                'modal-upload-doc': ModalUploadDoc
             },
             setup() {
                 const token = ref(localStorage.getItem('token') || '');
@@ -234,7 +244,7 @@
                 const showModalAdd = ref(false); const showModalAddVisitor = ref(false); 
                 const showModalPromote = ref(false); const showModalAuto = ref(false); 
                 const showModalManual = ref(false); const showModalQuickAdd = ref(false); const showModalSubs = ref(false);
-                const showModalEdit = ref(false); const showModalTemplate = ref(false);
+                const showModalEdit = ref(false); const showModalTemplate = ref(false); const showModalUploadDoc = ref(false);
                 const targetPromotion = ref(null);
                 const substitutes = ref([]); const targetSchedule = ref(null);
                 const quickAddData = ref(null);
@@ -344,7 +354,7 @@
                 };
 
                 const addVisitor = async (visitorData) => {
-                    await fetch('/members/', { method: 'POST', headers: headers(), body: JSON.stringify(visitorData) });
+                    await fetch('/visitors/', { method: 'POST', headers: headers(), body: JSON.stringify(visitorData) });
                     showModalAddVisitor.value = false; loadAll();
                 };
 
@@ -355,7 +365,7 @@
                         cargo_id: promotionData.cargo_id,
                         funcao_ids: promotionData.selectedFuncoes
                     };
-                    const r = await fetch(`/members/${targetPromotion.value.id}/promote`, { 
+                    const r = await fetch(`/visitors/${targetPromotion.value.id}/promote`, { 
                         method: 'PATCH', 
                         headers: headers(),
                         body: JSON.stringify(payload)
@@ -448,6 +458,27 @@
                     }
                 };
 
+                const uploadDoc = async (formData) => {
+                    const r = await fetch('/docs/', { 
+                        method: 'POST', 
+                        headers: { 'Authorization': `Bearer ${token.value}` },
+                        body: formData 
+                    });
+                    if (r.ok) {
+                        showModalUploadDoc.value = false;
+                        loadAll();
+                    } else {
+                        alert("Erro ao subir arquivo.");
+                    }
+                };
+
+                const deleteDoc = async (id) => {
+                    if (confirm("Deseja apagar este documento permanentemente?")) {
+                        await fetch(`/docs/${id}`, { method: 'DELETE', headers: headers() });
+                        loadAll();
+                    }
+                };
+
                 const getPosName = (id) => positions.value.find(p => p.id == id)?.name || '---';
 
                 const saveTemplate = async (templateData) => {
@@ -463,20 +494,12 @@
                 
                 return { 
                     token, userName, churchName, tab, members, schedules, positions, documents, templates, loginData, editingMember, editingId,
-                    showModalAdd, showModalAddVisitor, showModalPromote, showModalQuickAdd, showModalSubs, showModalAuto, showModalManual, showModalEdit, showModalTemplate,
+                    showModalAdd, showModalAddVisitor, showModalPromote, showModalQuickAdd, showModalSubs, showModalAuto, showModalManual, showModalEdit, showModalTemplate, showModalUploadDoc,
                     targetPromotion, substitutes, groupedSchedules, quickAddData, newMember,
                     login, logout, setTab, addVisitor, addMember, openPromotion, confirmPromotion, openEditMember, updateMember, deleteMember,
                     openQuickAdd, runQuickAdd, saveEdit, removeVaga, sendEventNotifications, suggestSubstitute, applySubstitute, 
                     runAutoBatch, runManualAdd, exportPDF, getQualifiedMembers, cargos, funcoes,
-                    getPosName, saveTemplate, deleteTemplate
-                };
-            }
-        }).mount('#app');
-    </script>
-</body>
-</html>
->
-             getPosName, saveTemplate, deleteTemplate
+                    getPosName, saveTemplate, deleteTemplate, uploadDoc, deleteDoc
                 };
             }
         }).mount('#app');
