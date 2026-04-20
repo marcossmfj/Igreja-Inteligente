@@ -12,7 +12,13 @@ export default {
     },
     computed: {
         sortedPositions() {
-            return [...this.positions].sort((a, b) => a.type.localeCompare(b.type));
+            // Garante que 'this.positions' seja tratado como array antes da ordenação
+            const pos = Array.isArray(this.positions) ? this.positions : [];
+            return [...pos].sort((a, b) => {
+                const typeA = a.type || "";
+                const typeB = b.type || "";
+                return typeA.localeCompare(typeB);
+            });
         }
     },
     template: `
