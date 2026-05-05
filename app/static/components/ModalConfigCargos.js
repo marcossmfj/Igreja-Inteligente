@@ -88,14 +88,25 @@ const ModalConfigCargos = {
             if (!this.newItem.name) return alert("Digite o nome do cargo ou função!");
             this.loading = true;
             try {
-                const response = await axios.post('/members/positions', this.newItem, {
-                    headers: { Authorization: \`Bearer \${localStorage.getItem('token')}\` }
+                const response = await fetch('/members/positions', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}` 
+                    },
+                    body: JSON.stringify(this.newItem)
                 });
-                this.$emit('refresh');
-                this.newItem.name = '';
+                
+                if (response.ok) {
+                    this.$emit('refresh');
+                    this.newItem.name = '';
+                } else {
+                    const errorData = await response.json();
+                    alert("Erro ao salvar: " + (errorData.detail || "Verifique se o termo já existe."));
+                }
             } catch (error) {
                 console.error("Erro ao salvar:", error);
-                alert("Erro ao salvar. Verifique se o termo já existe.");
+                alert("Erro de conexão com o servidor.");
             } finally {
                 this.loading = false;
             }
@@ -103,13 +114,20 @@ const ModalConfigCargos = {
         async deleteItem(id) {
             if (!confirm("Tem certeza que deseja excluir este termo? Isso pode afetar os membros já cadastrados.")) return;
             try {
-                await axios.delete(\`/members/positions/\${id}\`, {
-                    headers: { Authorization: \`Bearer \${localStorage.getItem('token')}\` }
+                const response = await fetch(`/members/positions/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
-                this.$emit('refresh');
+                if (response.ok) {
+                    this.$emit('refresh');
+                } else {
+                    alert("Erro ao excluir. O termo pode estar em uso.");
+                }
             } catch (error) {
-                alert("Erro ao excluir. O termo pode estar em uso.");
+                alert("Erro de conexão.");
             }
         }
     }
 };
+
+export default ModalConfigCargos;

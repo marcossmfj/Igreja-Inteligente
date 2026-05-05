@@ -115,10 +115,12 @@ export default {
                     body: JSON.stringify(this.newItem)
                 });
                 if(response.ok) {
-                    this.$emit('refresh');
                     this.newItem.name = '';
+                    this.$emit('refresh');
+                    alert("Cadastrado com sucesso!");
                 } else {
-                    alert("Erro ao salvar. Verifique se este nome já existe.");
+                    const errorData = await response.json();
+                    alert("Erro ao salvar: " + (errorData.detail || "Verifique se este nome já existe."));
                 }
             } catch (error) {
                 alert("Erro de conexão com o servidor.");
